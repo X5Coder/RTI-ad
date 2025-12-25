@@ -1,0 +1,1614 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>لوحة التحكم - RTI – EG | نظام الإدارة</title>
+    
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <style>
+        * {
+            font-family: 'Cairo', sans-serif;
+        }
+        
+        /* Animations */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        
+        @keyframes slideIn {
+            from { transform: translateX(-20px); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+        
+        .fade-in {
+            animation: fadeIn 0.3s ease-out;
+        }
+        
+        .slide-in {
+            animation: slideIn 0.3s ease-out;
+        }
+        
+        .pulse-animation {
+            animation: pulse 2s infinite;
+        }
+        
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 4px;
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: #888;
+            border-radius: 4px;
+        }
+        
+        ::-webkit-scrollbar-thumb:hover {
+            background: #555;
+        }
+        
+        /* Loading States */
+        .loading-shimmer {
+            background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+            background-size: 200% 100%;
+            animation: shimmer 1.5s infinite;
+        }
+        
+        @keyframes shimmer {
+            0% { background-position: -200% 0; }
+            100% { background-position: 200% 0; }
+        }
+        
+        /* Glass Effect */
+        .glass-effect {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        /* Status Colors */
+        .status-pending {
+            background: linear-gradient(135deg, #f59e0b, #fbbf24);
+            color: white;
+        }
+        
+        .status-approved {
+            background: linear-gradient(135deg, #10b981, #34d399);
+            color: white;
+        }
+        
+        .status-rejected {
+            background: linear-gradient(135deg, #ef4444, #f87171);
+            color: white;
+        }
+        
+        /* Hover Effects */
+        .hover-lift {
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        
+        .hover-lift:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+        }
+        
+        /* Modal Animation */
+        .modal-enter {
+            animation: modalEnter 0.3s ease-out;
+        }
+        
+        @keyframes modalEnter {
+            from {
+                opacity: 0;
+                transform: scale(0.95) translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1) translateY(0);
+            }
+        }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-800">
+    
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay" class="fixed inset-0 bg-white z-50 flex flex-col items-center justify-center">
+        <div class="relative">
+            <div class="w-16 h-16 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+            <div class="absolute inset-0 w-16 h-16 border-4 border-blue-200 border-t-transparent rounded-full animate-spin" style="animation-direction: reverse; animation-duration: 1.5s;"></div>
+        </div>
+        <p class="mt-4 text-lg font-semibold text-blue-600">جاري تحميل لوحة التحكم...</p>
+        <p class="mt-2 text-sm text-gray-600">RTI – EG | نظام إدارة الطلبات</p>
+    </div>
+    
+    <!-- Login Modal -->
+    <div id="loginModal" class="fixed inset-0 bg-gray-900 bg-opacity-50 z-40 hidden items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md modal-enter">
+            <div class="p-8">
+                <div class="text-center mb-8">
+                    <div class="flex justify-center mb-4">
+                        <div class="w-16 h-16 bg-gradient-to-br from-blue-600 to-blue-800 rounded-2xl flex items-center justify-center">
+                            <i class="fas fa-lock text-white text-2xl"></i>
+                        </div>
+                    </div>
+                    <h2 class="text-2xl font-bold text-gray-800">تسجيل الدخول</h2>
+                    <p class="text-gray-600 mt-2">لوحة تحكم RTI – EG | نظام إدارة الطلبات</p>
+                    <div class="mt-4 text-sm text-red-600 bg-red-50 p-3 rounded-lg hidden" id="loginError">
+                        <i class="fas fa-exclamation-circle ml-2"></i>
+                        <span id="loginErrorText"></span>
+                    </div>
+                </div>
+                
+                <form id="loginForm" class="space-y-6">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">اسم المستخدم</label>
+                        <div class="relative">
+                            <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                                <i class="fas fa-user text-gray-400"></i>
+                            </div>
+                            <input type="text" id="adminUsername" required
+                                   class="w-full pr-10 pl-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                                   placeholder="أدخل اسم المستخدم">
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">كلمة المرور</label>
+                        <div class="relative">
+                            <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                                <i class="fas fa-lock text-gray-400"></i>
+                            </div>
+                            <input type="password" id="adminPassword" required
+                                   class="w-full pr-10 pl-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                                   placeholder="أدخل كلمة المرور">
+                        </div>
+                    </div>
+                    
+                    <button type="submit" id="loginBtn"
+                            class="w-full bg-gradient-to-r from-blue-600 to-blue-700 text-white py-3.5 rounded-xl font-semibold hover:from-blue-700 hover:to-blue-800 transition-all hover:shadow-lg">
+                        <span id="loginBtnText">تسجيل الدخول</span>
+                        <i class="fas fa-sign-in-alt mr-2"></i>
+                    </button>
+                </form>
+                
+                <div class="mt-8 pt-6 border-t border-gray-200 text-center">
+                    <p class="text-sm text-gray-600">
+                        <i class="fas fa-shield-alt ml-2"></i>
+                        هذا النظام مخصص فقط للمسؤولين المعتمدين في RTI – EG
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Main Dashboard -->
+    <div id="dashboard" class="hidden">
+        <!-- Header -->
+        <header class="bg-white shadow-lg sticky top-0 z-30">
+            <div class="px-6 py-4">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center space-x-4 space-x-reverse">
+                        <div class="flex items-center">
+                            <div class="w-10 h-10 bg-gradient-to-br from-blue-600 to-blue-800 rounded-xl flex items-center justify-center">
+                                <i class="fas fa-briefcase text-white text-lg"></i>
+                            </div>
+                            <div class="mr-3">
+                                <h1 class="text-xl font-bold text-gray-800">RTI – EG</h1>
+                                <p class="text-xs text-gray-600">لوحة تحكم إدارة الطلبات</p>
+                            </div>
+                        </div>
+                        
+                        <div class="hidden md:flex items-center space-x-4 space-x-reverse text-sm">
+                            <div class="relative">
+                                <div class="absolute -top-1 -right-1 w-3 h-3 bg-green-500 rounded-full border-2 border-white"></div>
+                                <span class="px-3 py-1.5 bg-blue-50 text-blue-700 rounded-lg font-medium">
+                                    <i class="fas fa-wifi ml-1"></i>
+                                    متصل
+                                </span>
+                            </div>
+                            <div class="px-3 py-1.5 bg-emerald-50 text-emerald-700 rounded-lg font-medium">
+                                <i class="fas fa-sync-alt ml-1 animate-spin"></i>
+                التحديث التلقائي: <span id="refreshStatus">مفعل</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="flex items-center space-x-4 space-x-reverse">
+                        <!-- Stats Summary -->
+                        <div class="hidden lg:flex items-center space-x-6 space-x-reverse">
+                            <div class="text-center">
+                                <div class="text-lg font-bold text-blue-600" id="totalApplications">0</div>
+                                <div class="text-xs text-gray-600">إجمالي الطلبات</div>
+                            </div>
+                            <div class="text-center">
+                                <div class="text-lg font-bold text-emerald-600" id="approvedApplications">0</div>
+                                <div class="text-xs text-gray-600">مقبولين</div>
+                            </div>
+                            <div class="text-center">
+                                <div class="text-lg font-bold text-amber-600" id="pendingApplications">0</div>
+                                <div class="text-xs text-gray-600">قيد الانتظار</div>
+                            </div>
+                            <div class="text-center">
+                                <div class="text-lg font-bold text-red-600" id="reportedProblems">0</div>
+                                <div class="text-xs text-gray-600">مشاكل</div>
+                            </div>
+                        </div>
+                        
+                        <!-- User Menu -->
+                        <div class="relative">
+                            <button id="userMenuBtn" class="flex items-center space-x-3 space-x-reverse bg-gray-50 hover:bg-gray-100 px-4 py-2.5 rounded-xl transition-all">
+                                <div class="text-right">
+                                    <div class="font-semibold text-gray-800" id="adminName">المسؤول</div>
+                                    <div class="text-xs text-gray-600">لوحة التحكم</div>
+                                </div>
+                                <div class="w-10 h-10 bg-gradient-to-br from-blue-600 to-blue-800 rounded-full flex items-center justify-center">
+                                    <i class="fas fa-user-cog text-white"></i>
+                                </div>
+                            </button>
+                            
+                            <div id="userMenu" class="absolute left-0 mt-2 w-48 bg-white rounded-xl shadow-lg border border-gray-200 hidden z-40">
+                                <div class="p-4 border-b border-gray-100">
+                                    <div class="font-semibold text-gray-800">المسؤول</div>
+                                    <div class="text-xs text-gray-600 mt-1">آخر دخول: <span id="lastLoginTime">الآن</span></div>
+                                </div>
+                                <div class="p-2">
+                                    <button id="logoutBtn" class="w-full text-right px-4 py-2.5 text-red-600 hover:bg-red-50 rounded-lg transition-all flex items-center justify-between">
+                                        <i class="fas fa-sign-out-alt"></i>
+                                        تسجيل الخروج
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Mobile Menu -->
+                        <button id="mobileMenuBtn" class="lg:hidden text-gray-600 hover:text-gray-800">
+                            <i class="fas fa-bars text-xl"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </header>
+        
+        <!-- Mobile Menu -->
+        <div id="mobileMenu" class="lg:hidden bg-white border-t border-gray-200 px-6 py-4 hidden">
+            <div class="grid grid-cols-4 gap-4">
+                <div class="text-center">
+                    <div class="text-lg font-bold text-blue-600" id="mobileTotalApplications">0</div>
+                    <div class="text-xs text-gray-600">إجمالي الطلبات</div>
+                </div>
+                <div class="text-center">
+                    <div class="text-lg font-bold text-emerald-600" id="mobileApprovedApplications">0</div>
+                    <div class="text-xs text-gray-600">مقبولين</div>
+                </div>
+                <div class="text-center">
+                    <div class="text-lg font-bold text-amber-600" id="mobilePendingApplications">0</div>
+                    <div class="text-xs text-gray-600">قيد الانتظار</div>
+                </div>
+                <div class="text-center">
+                    <div class="text-lg font-bold text-red-600" id="mobileReportedProblems">0</div>
+                    <div class="text-xs text-gray-600">مشاكل</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Main Content -->
+        <main class="px-4 py-6 md:px-6">
+            <!-- Welcome Banner -->
+            <div class="mb-8 bg-gradient-to-r from-blue-600 to-blue-800 rounded-2xl p-6 text-white fade-in">
+                <div class="flex flex-col md:flex-row md:items-center justify-between">
+                    <div>
+                        <h2 class="text-2xl font-bold">مرحباً بك في لوحة التحكم</h2>
+                        <p class="text-blue-100 mt-2">RTI – EG | نظام إدارة الطلبات والتطبيقات</p>
+                        <div class="mt-4 flex items-center space-x-4 space-x-reverse text-sm">
+                            <div class="flex items-center">
+                                <i class="fas fa-shield-alt ml-2"></i>
+                                <span>نظام آمن ومحمي</span>
+                            </div>
+                            <div class="flex items-center">
+                                <i class="fas fa-sync-alt ml-2 animate-spin"></i>
+                                <span>تحديث تلقائي كل 10 ثواني</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mt-4 md:mt-0">
+                        <div class="text-center bg-white bg-opacity-20 rounded-xl px-4 py-3">
+                            <div class="text-3xl font-bold" id="currentTime">--:--</div>
+                            <div class="text-sm opacity-90" id="currentDate">--/--/----</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Dashboard Grid -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <!-- Left Column - Applications -->
+                <div class="lg:col-span-2 space-y-6">
+                    <!-- Applications List -->
+                    <div class="bg-white rounded-2xl shadow-lg border border-gray-200 fade-in">
+                        <div class="p-6 border-b border-gray-100">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <h3 class="text-lg font-bold text-gray-800">الطلبات المقدمة</h3>
+                                    <p class="text-sm text-gray-600 mt-1">جميع طلبات التوظيف المقدمة للنظام</p>
+                                </div>
+                                <div class="flex items-center space-x-3 space-x-reverse">
+                                    <button id="refreshApplications" class="px-4 py-2 bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100 transition-all">
+                                        <i class="fas fa-sync-alt ml-2"></i>
+                                        تحديث
+                                    </button>
+                                    <div class="relative">
+                                        <select id="filterStatus" class="appearance-none bg-gray-50 border border-gray-300 rounded-lg px-4 py-2 pr-8 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                            <option value="all">جميع الحالات</option>
+                                            <option value="pending">قيد الانتظار</option>
+                                            <option value="approved">مقبول</option>
+                                        </select>
+                                        <div class="absolute left-3 top-1/2 transform -translate-y-1/2 pointer-events-none">
+                                            <i class="fas fa-filter text-gray-400"></i>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="p-1">
+                            <div class="overflow-x-auto">
+                                <table class="w-full">
+                                    <thead>
+                                        <tr class="bg-gray-50 text-right">
+                                            <th class="py-3 px-4 text-sm font-semibold text-gray-700 rounded-r-lg">المعلومات</th>
+                                            <th class="py-3 px-4 text-sm font-semibold text-gray-700">الحالة</th>
+                                            <th class="py-3 px-4 text-sm font-semibold text-gray-700 rounded-l-lg">الإجراءات</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="applicationsTable" class="divide-y divide-gray-100">
+                                        <!-- Applications will be loaded here -->
+                                        <tr id="loadingApplications">
+                                            <td colspan="3" class="py-8 text-center">
+                                                <div class="flex flex-col items-center justify-center">
+                                                    <div class="w-8 h-8 border-2 border-blue-600 border-t-transparent rounded-full animate-spin mb-3"></div>
+                                                    <p class="text-gray-600">جاري تحميل الطلبات...</p>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        
+                        <div class="p-4 border-t border-gray-100 text-center">
+                            <div class="text-sm text-gray-600" id="applicationsCount">
+                                جاري تحميل البيانات...
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Problems Reports -->
+                    <div class="bg-white rounded-2xl shadow-lg border border-gray-200 fade-in">
+                        <div class="p-6 border-b border-gray-100">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <h3 class="text-lg font-bold text-gray-800">تقارير المشاكل</h3>
+                                    <p class="text-sm text-gray-600 mt-1">المشاكل المبلغ عنها من المستخدمين</p>
+                                </div>
+                                <button id="refreshProblems" class="px-4 py-2 bg-red-50 text-red-700 rounded-lg hover:bg-red-100 transition-all">
+                                    <i class="fas fa-sync-alt ml-2"></i>
+                                    تحديث
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="p-1">
+                            <div id="problemsList" class="space-y-4 max-h-96 overflow-y-auto p-2">
+                                <!-- Problems will be loaded here -->
+                                <div class="text-center py-8">
+                                    <div class="w-8 h-8 border-2 border-red-600 border-t-transparent rounded-full animate-spin mx-auto mb-3"></div>
+                                    <p class="text-gray-600">جاري تحميل تقارير المشاكل...</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Right Column - Stats & Actions -->
+                <div class="space-y-6">
+                    <!-- Quick Stats -->
+                    <div class="bg-white rounded-2xl shadow-lg border border-gray-200 p-6 fade-in">
+                        <h3 class="text-lg font-bold text-gray-800 mb-4">إحصائيات سريعة</h3>
+                        
+                        <div class="space-y-4">
+                            <div class="flex items-center justify-between p-4 bg-blue-50 rounded-xl">
+                                <div>
+                                    <div class="text-2xl font-bold text-blue-700" id="statsTotal">0</div>
+                                    <div class="text-sm text-blue-600">إجمالي الطلبات</div>
+                                </div>
+                                <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                                    <i class="fas fa-file-alt text-blue-600 text-xl"></i>
+                                </div>
+                            </div>
+                            
+                            <div class="flex items-center justify-between p-4 bg-emerald-50 rounded-xl">
+                                <div>
+                                    <div class="text-2xl font-bold text-emerald-700" id="statsApproved">0</div>
+                                    <div class="text-sm text-emerald-600">طلبات مقبولة</div>
+                                </div>
+                                <div class="w-12 h-12 bg-emerald-100 rounded-lg flex items-center justify-center">
+                                    <i class="fas fa-check-circle text-emerald-600 text-xl"></i>
+                                </div>
+                            </div>
+                            
+                            <div class="flex items-center justify-between p-4 bg-amber-50 rounded-xl">
+                                <div>
+                                    <div class="text-2xl font-bold text-amber-700" id="statsPending">0</div>
+                                    <div class="text-sm text-amber-600">طلبات قيد الانتظار</div>
+                                </div>
+                                <div class="w-12 h-12 bg-amber-100 rounded-lg flex items-center justify-center">
+                                    <i class="fas fa-clock text-amber-600 text-xl"></i>
+                                </div>
+                            </div>
+                            
+                            <div class="flex items-center justify-between p-4 bg-red-50 rounded-xl">
+                                <div>
+                                    <div class="text-2xl font-bold text-red-700" id="statsProblems">0</div>
+                                    <div class="text-sm text-red-600">تقارير مشاكل</div>
+                                </div>
+                                <div class="w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center">
+                                    <i class="fas fa-exclamation-triangle text-red-600 text-xl"></i>
+                                </div>
+                            </div>
+                            
+                            <div class="flex items-center justify-between p-4 bg-purple-50 rounded-xl">
+                                <div>
+                                    <div class="text-2xl font-bold text-purple-700" id="statsReferrals">0</div>
+                                    <div class="text-sm text-purple-600">إجمالي الإحالات</div>
+                                </div>
+                                <div class="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
+                                    <i class="fas fa-users text-purple-600 text-xl"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Quick Actions -->
+                    <div class="bg-white rounded-2xl shadow-lg border border-gray-200 p-6 fade-in">
+                        <h3 class="text-lg font-bold text-gray-800 mb-4">إجراءات سريعة</h3>
+                        
+                        <div class="space-y-3">
+                            <button id="toggleAutoRefresh" class="w-full text-right px-4 py-3 bg-gray-50 hover:bg-gray-100 rounded-xl transition-all flex items-center justify-between">
+                                <i class="fas fa-sync-alt text-blue-600"></i>
+                                <span>التحديث التلقائي: <span id="autoRefreshStatus">مفعل</span></span>
+                            </button>
+                            
+                            <button id="exportData" class="w-full text-right px-4 py-3 bg-gray-50 hover:bg-gray-100 rounded-xl transition-all flex items-center justify-between">
+                                <i class="fas fa-download text-emerald-600"></i>
+                                <span>تصدير البيانات</span>
+                            </button>
+                            
+                            <button id="viewAllApproved" class="w-full text-right px-4 py-3 bg-gray-50 hover:bg-gray-100 rounded-xl transition-all flex items-center justify-between">
+                                <i class="fas fa-list-check text-purple-600"></i>
+                                <span>عرض جميع المقبولين</span>
+                            </button>
+                            
+                            <div class="pt-4 border-t border-gray-100">
+                                <h4 class="font-semibold text-gray-700 mb-3">الإعدادات</h4>
+                                <div class="space-y-2">
+                                    <div class="flex items-center justify-between">
+                                        <span class="text-sm text-gray-600">تحديث تلقائي</span>
+                                        <label class="relative inline-flex items-center cursor-pointer">
+                                            <input type="checkbox" id="autoRefreshToggle" class="sr-only peer" checked>
+                                            <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:right-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                                        </label>
+                                    </div>
+                                    
+                                    <div class="flex items-center justify-between">
+                                        <span class="text-sm text-gray-600">إشعارات صوتية</span>
+                                        <label class="relative inline-flex items-center cursor-pointer">
+                                            <input type="checkbox" id="soundToggle" class="sr-only peer" checked>
+                                            <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:right-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- System Status -->
+                    <div class="bg-white rounded-2xl shadow-lg border border-gray-200 p-6 fade-in">
+                        <h3 class="text-lg font-bold text-gray-800 mb-4">حالة النظام</h3>
+                        
+                        <div class="space-y-3">
+                            <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                                <div class="flex items-center">
+                                    <div class="w-3 h-3 bg-green-500 rounded-full ml-2"></div>
+                                    <span class="text-sm font-medium">قاعدة البيانات</span>
+                                </div>
+                                <span class="text-sm text-green-600 font-medium">متصل</span>
+                            </div>
+                            
+                            <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                                <div class="flex items-center">
+                                    <div class="w-3 h-3 bg-green-500 rounded-full ml-2"></div>
+                                    <span class="text-sm font-medium">الخادم</span>
+                                </div>
+                                <span class="text-sm text-green-600 font-medium">نشط</span>
+                            </div>
+                            
+                            <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                                <div class="flex items-center">
+                                    <div class="w-3 h-3 bg-green-500 rounded-full ml-2"></div>
+                                    <span class="text-sm font-medium">التحديث التلقائي</span>
+                                </div>
+                                <span class="text-sm text-green-600 font-medium" id="systemAutoRefresh">مفعل</span>
+                            </div>
+                            
+                            <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                                <div class="flex items-center">
+                                    <div class="w-3 h-3 bg-blue-500 rounded-full ml-2"></div>
+                                    <span class="text-sm font-medium">آخر تحديث</span>
+                                </div>
+                                <span class="text-sm text-blue-600 font-medium" id="lastUpdateTime">--:--</span>
+                            </div>
+                            
+                            <div class="pt-4 mt-4 border-t border-gray-100">
+                                <div class="text-xs text-gray-500 text-center">
+                                    <i class="fas fa-shield-alt ml-1"></i>
+                                    نظام آمن ومحمي | RTI – EG © 2024
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+        
+        <!-- Footer -->
+        <footer class="mt-12 py-6 px-6 border-t border-gray-200 bg-gray-50">
+            <div class="flex flex-col md:flex-row md:items-center justify-between">
+                <div class="text-center md:text-right mb-4 md:mb-0">
+                    <div class="text-sm text-gray-600">
+                        <i class="fas fa-cog ml-2"></i>
+                        نظام إدارة RTI – EG | الإصدار 2.0
+                    </div>
+                </div>
+                
+                <div class="text-center md:text-left">
+                    <div class="text-sm text-gray-600 flex items-center justify-center md:justify-start space-x-4 space-x-reverse">
+                        <span>
+                            <i class="fas fa-user-shield ml-2"></i>
+                            للمسؤولين المعتمدين فقط
+                        </span>
+                        <span class="hidden md:inline">|</span>
+                        <span id="connectionStatus">
+                            <i class="fas fa-wifi ml-2"></i>
+                            متصل بقاعدة البيانات
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </footer>
+    </div>
+    
+    <!-- Application Details Modal -->
+    <div id="applicationModal" class="fixed inset-0 bg-gray-900 bg-opacity-50 z-50 hidden items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden modal-enter">
+            <div class="p-6 border-b border-gray-200 flex items-center justify-between">
+                <h3 class="text-xl font-bold text-gray-800">تفاصيل الطلب</h3>
+                <button id="closeApplicationModal" class="text-gray-400 hover:text-gray-600">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+            
+            <div class="overflow-y-auto max-h-[calc(90vh-80px)]">
+                <div id="applicationDetails" class="p-6">
+                    <!-- Application details will be loaded here -->
+                    <div class="text-center py-12">
+                        <div class="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+                        <p class="text-gray-600">جاري تحميل تفاصيل الطلب...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Image Preview Modal -->
+    <div id="imageModal" class="fixed inset-0 bg-black bg-opacity-90 z-50 hidden items-center justify-center p-4">
+        <div class="relative w-full max-w-4xl">
+            <button id="closeImageModal" class="absolute left-4 top-4 z-10 text-white hover:text-gray-300">
+                <i class="fas fa-times text-2xl"></i>
+            </button>
+            <div class="text-center mb-4">
+                <p class="text-white text-lg font-semibold" id="imageTitle">معاينة الصورة</p>
+            </div>
+            <img id="previewImage" src="" alt="Preview" class="w-full h-auto rounded-lg shadow-2xl">
+            <div class="mt-4 text-center">
+                <a id="downloadImage" href="#" target="_blank" 
+                   class="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all">
+                    <i class="fas fa-external-link-alt ml-2"></i>
+                    فتح الصورة في نافذة جديدة
+                </a>
+            </div>
+        </div>
+    </div>
+    
+    <!-- WhatsApp Modal -->
+    <div id="whatsappModal" class="fixed inset-0 bg-gray-900 bg-opacity-50 z-50 hidden items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md modal-enter">
+            <div class="p-6 border-b border-gray-200">
+                <h3 class="text-xl font-bold text-gray-800">الاتصال عبر واتساب</h3>
+            </div>
+            
+            <div class="p-6">
+                <div class="text-center mb-6">
+                    <div class="w-16 h-16 bg-gradient-to-br from-green-500 to-green-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <i class="fab fa-whatsapp text-white text-2xl"></i>
+                    </div>
+                    <p class="text-gray-700" id="whatsappMessage">سيتم فتح محادثة واتساب مع الرقم:</p>
+                    <div class="text-2xl font-bold text-green-600 mt-2" id="whatsappNumber">01000000000</div>
+                </div>
+                
+                <div class="flex space-x-3 space-x-reverse">
+                    <button id="cancelWhatsApp" class="flex-1 px-4 py-3 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 transition-all">
+                        إلغاء
+                    </button>
+                    <a id="openWhatsApp" href="#" target="_blank"
+                       class="flex-1 px-4 py-3 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-xl hover:from-green-600 hover:to-green-700 transition-all text-center">
+                        <i class="fab fa-whatsapp ml-2"></i>
+                        فتح واتساب
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+    
+    <script>
+        // Firebase Configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyAX8O7jMPikO13-2LWLkdBZ_96QKeuLIt0",
+            authDomain: "kimo-pro-29933.firebaseapp.com",
+            databaseURL: "https://kimo-pro-29933-default-rtdb.firebaseio.com",
+            projectId: "kimo-pro-29933",
+            storageBucket: "kimo-pro-29933.appspot.com",
+        };
+        
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
+        
+        // Admin Credentials (In production, use Firebase Authentication)
+        const ADMIN_CREDENTIALS = {
+            username: "admin",
+            password: "rti2024"
+        };
+        
+        // Global Variables
+        let currentAdmin = null;
+        let autoRefreshInterval = null;
+        let isAutoRefreshEnabled = true;
+        let applicationsData = {};
+        let problemsData = {};
+        
+        // DOM Elements
+        const loadingOverlay = document.getElementById('loadingOverlay');
+        const loginModal = document.getElementById('loginModal');
+        const dashboard = document.getElementById('dashboard');
+        const loginForm = document.getElementById('loginForm');
+        const logoutBtn = document.getElementById('logoutBtn');
+        const userMenuBtn = document.getElementById('userMenuBtn');
+        const userMenu = document.getElementById('userMenu');
+        const applicationsTable = document.getElementById('applicationsTable');
+        const problemsList = document.getElementById('problemsList');
+        const applicationModal = document.getElementById('applicationModal');
+        const imageModal = document.getElementById('imageModal');
+        const whatsappModal = document.getElementById('whatsappModal');
+        
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            checkLoginStatus();
+            setupEventListeners();
+            updateDateTime();
+            setInterval(updateDateTime, 1000);
+        });
+        
+        // Setup Event Listeners
+        function setupEventListeners() {
+            // Login Form
+            loginForm.addEventListener('submit', handleLogin);
+            logoutBtn.addEventListener('click', handleLogout);
+            
+            // User Menu
+            userMenuBtn.addEventListener('click', function() {
+                userMenu.classList.toggle('hidden');
+            });
+            
+            // Close modals when clicking outside
+            document.addEventListener('click', function(event) {
+                if (!userMenuBtn.contains(event.target) && !userMenu.contains(event.target)) {
+                    userMenu.classList.add('hidden');
+                }
+            });
+            
+            // Close application modal
+            document.getElementById('closeApplicationModal').addEventListener('click', function() {
+                applicationModal.classList.add('hidden');
+            });
+            
+            // Close image modal
+            document.getElementById('closeImageModal').addEventListener('click', function() {
+                imageModal.classList.add('hidden');
+            });
+            
+            // Close WhatsApp modal
+            document.getElementById('cancelWhatsApp').addEventListener('click', function() {
+                whatsappModal.classList.add('hidden');
+            });
+            
+            // Refresh buttons
+            document.getElementById('refreshApplications').addEventListener('click', loadApplications);
+            document.getElementById('refreshProblems').addEventListener('click', loadProblems);
+            
+            // Filter applications
+            document.getElementById('filterStatus').addEventListener('change', filterApplications);
+            
+            // Auto refresh toggle
+            document.getElementById('toggleAutoRefresh').addEventListener('click', toggleAutoRefresh);
+            document.getElementById('autoRefreshToggle').addEventListener('change', toggleAutoRefresh);
+            
+            // Mobile menu
+            document.getElementById('mobileMenuBtn').addEventListener('click', function() {
+                document.getElementById('mobileMenu').classList.toggle('hidden');
+            });
+            
+            // Export data
+            document.getElementById('exportData').addEventListener('click', exportData);
+            
+            // View all approved
+            document.getElementById('viewAllApproved').addEventListener('click', function() {
+                document.getElementById('filterStatus').value = 'approved';
+                filterApplications();
+            });
+        }
+        
+        // Check Login Status
+        function checkLoginStatus() {
+            const savedAdmin = localStorage.getItem('rti_admin');
+            if (savedAdmin) {
+                try {
+                    currentAdmin = JSON.parse(savedAdmin);
+                    if (currentAdmin && currentAdmin.loggedIn) {
+                        showDashboard();
+                        return;
+                    }
+                } catch (e) {
+                    console.error('Error parsing admin data:', e);
+                }
+            }
+            
+            showLoginModal();
+        }
+        
+        // Show Login Modal
+        function showLoginModal() {
+            loadingOverlay.classList.add('hidden');
+            loginModal.classList.remove('hidden');
+            loginModal.classList.add('flex');
+        }
+        
+        // Show Dashboard
+        function showDashboard() {
+            loadingOverlay.classList.remove('hidden');
+            
+            setTimeout(() => {
+                loginModal.classList.add('hidden');
+                dashboard.classList.remove('hidden');
+                loadingOverlay.classList.add('hidden');
+                
+                // Load data
+                loadApplications();
+                loadProblems();
+                updateStats();
+                
+                // Start auto-refresh
+                startAutoRefresh();
+                
+                // Update admin name
+                document.getElementById('adminName').textContent = currentAdmin?.name || 'المسؤول';
+                document.getElementById('lastLoginTime').textContent = getFormattedTime(new Date());
+                
+            }, 1000);
+        }
+        
+        // Handle Login
+        function handleLogin(e) {
+            e.preventDefault();
+            
+            const username = document.getElementById('adminUsername').value.trim();
+            const password = document.getElementById('adminPassword').value;
+            const loginError = document.getElementById('loginError');
+            const loginBtn = document.getElementById('loginBtn');
+            const loginBtnText = document.getElementById('loginBtnText');
+            
+            // Reset error
+            loginError.classList.add('hidden');
+            
+            // Show loading
+            loginBtn.disabled = true;
+            loginBtnText.textContent = 'جاري التحقق...';
+            
+            // Simulate API call
+            setTimeout(() => {
+                if (username === ADMIN_CREDENTIALS.username && password === ADMIN_CREDENTIALS.password) {
+                    currentAdmin = {
+                        username: username,
+                        name: 'مسؤول النظام',
+                        loggedIn: true,
+                        loginTime: new Date().toISOString()
+                    };
+                    
+                    // Save to localStorage
+                    localStorage.setItem('rti_admin', JSON.stringify(currentAdmin));
+                    
+                    // Show dashboard
+                    showDashboard();
+                } else {
+                    loginError.classList.remove('hidden');
+                    document.getElementById('loginErrorText').textContent = 'اسم المستخدم أو كلمة المرور غير صحيحة';
+                    loginBtn.disabled = false;
+                    loginBtnText.textContent = 'تسجيل الدخول';
+                }
+            }, 1000);
+        }
+        
+        // Handle Logout
+        function handleLogout() {
+            if (confirm('هل أنت متأكد من تسجيل الخروج؟')) {
+                // Clear auto-refresh
+                if (autoRefreshInterval) {
+                    clearInterval(autoRefreshInterval);
+                    autoRefreshInterval = null;
+                }
+                
+                // Clear admin data
+                localStorage.removeItem('rti_admin');
+                currentAdmin = null;
+                
+                // Hide dashboard and show login
+                dashboard.classList.add('hidden');
+                showLoginModal();
+                
+                // Reset login form
+                document.getElementById('loginForm').reset();
+                document.getElementById('loginError').classList.add('hidden');
+            }
+        }
+        
+        // Load Applications
+        async function loadApplications() {
+            try {
+                const dataRef = database.ref('data');
+                const snapshot = await dataRef.once('value');
+                
+                if (snapshot.exists()) {
+                    applicationsData = snapshot.val();
+                    displayApplications(applicationsData);
+                    updateStats();
+                } else {
+                    displayNoApplications();
+                }
+                
+                // Update last update time
+                document.getElementById('lastUpdateTime').textContent = getFormattedTime(new Date());
+                
+            } catch (error) {
+                console.error('Error loading applications:', error);
+                showError('فشل في تحميل الطلبات. يرجى المحاولة مرة أخرى.');
+            }
+        }
+        
+        // Display Applications
+        function displayApplications(data) {
+            const tableBody = document.getElementById('applicationsTable');
+            tableBody.innerHTML = '';
+            
+            let pendingCount = 0;
+            let approvedCount = 0;
+            let totalReferrals = 0;
+            
+            Object.entries(data).forEach(([key, application]) => {
+                if (!application || typeof application !== 'object') return;
+                
+                // Count statistics
+                if (application.tak === true) {
+                    approvedCount++;
+                } else {
+                    pendingCount++;
+                }
+                
+                totalReferrals += application.num || 0;
+                
+                // Create table row
+                const row = document.createElement('tr');
+                row.className = 'hover:bg-gray-50 transition-all hover-lift fade-in';
+                row.dataset.id = key;
+                
+                // Format date
+                const createdDate = application.created_at ? new Date(application.created_at) : new Date();
+                const dateString = createdDate.toLocaleDateString('ar-EG');
+                const timeString = createdDate.toLocaleTimeString('ar-EG', { hour12: true, hour: '2-digit', minute: '2-digit' });
+                
+                // Status badge
+                const status = application.tak === true ? 'approved' : 'pending';
+                const statusText = application.tak === true ? 'مقبول' : 'قيد الانتظار';
+                const statusClass = application.tak === true ? 'status-approved' : 'status-pending';
+                
+                row.innerHTML = `
+                    <td class="py-4 px-4">
+                        <div class="flex items-start space-x-3 space-x-reverse">
+                            <div class="w-12 h-12 bg-gradient-to-br from-blue-100 to-blue-200 rounded-xl flex items-center justify-center flex-shrink-0">
+                                <i class="fas fa-user text-blue-600"></i>
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <div class="flex items-center justify-between mb-1">
+                                    <h4 class="font-bold text-gray-800 truncate">${application.full_name || 'غير محدد'}</h4>
+                                    <span class="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">${application.user_code || 'لا يوجد'}</span>
+                                </div>
+                                <div class="text-sm text-gray-600 space-y-1">
+                                    <div class="flex items-center">
+                                        <i class="fas fa-phone ml-2 text-xs"></i>
+                                        <span>${application.contact?.phone_number || 'غير محدد'}</span>
+                                    </div>
+                                    <div class="flex items-center">
+                                        <i class="fas fa-user-tag ml-2 text-xs"></i>
+                                        <span>كود المحيل: ${application.referred_by_user_code || 'لا يوجد'}</span>
+                                    </div>
+                                    <div class="flex items-center">
+                                        <i class="fas fa-users ml-2 text-xs"></i>
+                                        <span>عدد الإحالات: <span class="font-bold text-blue-600">${application.num || 0}</span></span>
+                                    </div>
+                                    <div class="flex items-center text-xs text-gray-500">
+                                        <i class="fas fa-calendar ml-2"></i>
+                                        <span>${dateString} - ${timeString}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </td>
+                    <td class="py-4 px-4">
+                        <span class="inline-block px-3 py-1.5 text-sm font-medium rounded-full ${statusClass}">
+                            <i class="fas ${status === 'approved' ? 'fa-check-circle' : 'fa-clock'} ml-1"></i>
+                            ${statusText}
+                        </span>
+                        ${application.tak !== true ? `
+                        <div class="mt-2">
+                            <button onclick="approveApplication('${key}')" 
+                                    class="text-xs bg-emerald-50 text-emerald-700 hover:bg-emerald-100 px-3 py-1.5 rounded-lg transition-all w-full">
+                                <i class="fas fa-check ml-1"></i>
+                                قبول الطلب
+                            </button>
+                        </div>
+                        ` : ''}
+                    </td>
+                    <td class="py-4 px-4">
+                        <div class="flex flex-col space-y-2">
+                            <button onclick="viewApplicationDetails('${key}')" 
+                                    class="text-sm bg-blue-50 text-blue-700 hover:bg-blue-100 px-4 py-2 rounded-lg transition-all flex items-center justify-center">
+                                <i class="fas fa-eye ml-2"></i>
+                                عرض التفاصيل
+                            </button>
+                            ${application.contact?.phone_number ? `
+                            <button onclick="openWhatsAppModal('${application.contact.phone_number}', '${application.full_name || ''}')" 
+                                    class="text-sm bg-green-50 text-green-700 hover:bg-green-100 px-4 py-2 rounded-lg transition-all flex items-center justify-center">
+                                <i class="fab fa-whatsapp ml-2"></i>
+                                واتساب
+                            </button>
+                            ` : ''}
+                        </div>
+                    </td>
+                `;
+                
+                tableBody.appendChild(row);
+            });
+            
+            // Update counts
+            document.getElementById('totalApplications').textContent = Object.keys(data).length;
+            document.getElementById('approvedApplications').textContent = approvedCount;
+            document.getElementById('pendingApplications').textContent = pendingCount;
+            document.getElementById('mobileTotalApplications').textContent = Object.keys(data).length;
+            document.getElementById('mobileApprovedApplications').textContent = approvedCount;
+            document.getElementById('mobilePendingApplications').textContent = pendingCount;
+            document.getElementById('statsTotal').textContent = Object.keys(data).length;
+            document.getElementById('statsApproved').textContent = approvedCount;
+            document.getElementById('statsPending').textContent = pendingCount;
+            document.getElementById('statsReferrals').textContent = totalReferrals;
+            
+            // Update applications count text
+            document.getElementById('applicationsCount').innerHTML = `
+                <span class="font-medium">${Object.keys(data).length}</span> طلب | 
+                <span class="text-emerald-600 font-medium">${approvedCount}</span> مقبول | 
+                <span class="text-amber-600 font-medium">${pendingCount}</span> قيد الانتظار
+            `;
+            
+            // Apply filter if active
+            filterApplications();
+        }
+        
+        // Display No Applications
+        function displayNoApplications() {
+            const tableBody = document.getElementById('applicationsTable');
+            tableBody.innerHTML = `
+                <tr>
+                    <td colspan="3" class="py-12 text-center">
+                        <div class="flex flex-col items-center justify-center">
+                            <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
+                                <i class="fas fa-inbox text-gray-400 text-2xl"></i>
+                            </div>
+                            <h4 class="text-lg font-semibold text-gray-700 mb-2">لا توجد طلبات</h4>
+                            <p class="text-gray-500">لم يتم تقديم أي طلبات بعد.</p>
+                        </div>
+                    </td>
+                </tr>
+            `;
+            
+            // Reset counts
+            document.getElementById('totalApplications').textContent = '0';
+            document.getElementById('approvedApplications').textContent = '0';
+            document.getElementById('pendingApplications').textContent = '0';
+            document.getElementById('statsTotal').textContent = '0';
+            document.getElementById('statsApproved').textContent = '0';
+            document.getElementById('statsPending').textContent = '0';
+            document.getElementById('statsReferrals').textContent = '0';
+        }
+        
+        // Filter Applications
+        function filterApplications() {
+            const filterValue = document.getElementById('filterStatus').value;
+            const rows = document.querySelectorAll('#applicationsTable tr[data-id]');
+            
+            rows.forEach(row => {
+                const status = row.querySelector('.status-approved') ? 'approved' : 
+                              row.querySelector('.status-pending') ? 'pending' : '';
+                
+                if (filterValue === 'all' || filterValue === status) {
+                    row.classList.remove('hidden');
+                } else {
+                    row.classList.add('hidden');
+                }
+            });
+        }
+        
+        // Approve Application
+        async function approveApplication(id) {
+            if (!confirm('هل أنت متأكد من قبول هذا الطلب؟ سيظهر كود الموظف للمستخدم.')) {
+                return;
+            }
+            
+            try {
+                const applicationRef = database.ref(`data/${id}`);
+                await applicationRef.update({
+                    tak: true,
+                    approved_at: new Date().toISOString(),
+                    approved_by: currentAdmin?.name || 'المسؤول'
+                });
+                
+                // Show success message
+                showSuccess('تم قبول الطلب بنجاح!');
+                
+                // Reload applications
+                loadApplications();
+                
+            } catch (error) {
+                console.error('Error approving application:', error);
+                showError('فشل في قبول الطلب. يرجى المحاولة مرة أخرى.');
+            }
+        }
+        
+        // View Application Details
+        function viewApplicationDetails(id) {
+            const application = applicationsData[id];
+            if (!application) return;
+            
+            const detailsDiv = document.getElementById('applicationDetails');
+            
+            // Format dates
+            const createdDate = application.created_at ? new Date(application.created_at) : new Date();
+            const approvedDate = application.approved_at ? new Date(application.approved_at) : null;
+            
+            // Prepare document images
+            let documentImages = '';
+            if (application.documents?.id_card) {
+                documentImages += `
+                    <div class="mb-4">
+                        <h4 class="font-semibold text-gray-700 mb-2">صور البطاقة الشخصية:</h4>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            ${application.documents.id_card.front_image_url ? `
+                            <div>
+                                <p class="text-sm text-gray-600 mb-2">الوجه الأمامي</p>
+                                <img src="${application.documents.id_card.front_image_url}" 
+                                     alt="بطاقة أمامية" 
+                                     class="w-full h-48 object-cover rounded-lg cursor-pointer hover:opacity-90 transition-all"
+                                     onclick="previewImage('${application.documents.id_card.front_image_url}', 'البطاقة الشخصية - الوجه الأمامي')">
+                            </div>
+                            ` : ''}
+                            ${application.documents.id_card.back_image_url ? `
+                            <div>
+                                <p class="text-sm text-gray-600 mb-2">الوجه الخلفي</p>
+                                <img src="${application.documents.id_card.back_image_url}" 
+                                     alt="بطاقة خلفية" 
+                                     class="w-full h-48 object-cover rounded-lg cursor-pointer hover:opacity-90 transition-all"
+                                     onclick="previewImage('${application.documents.id_card.back_image_url}', 'البطاقة الشخصية - الوجه الخلفي')">
+                            </div>
+                            ` : ''}
+                        </div>
+                    </div>
+                `;
+            }
+            
+            if (application.documents?.birth_certificate_image_url) {
+                documentImages += `
+                    <div class="mb-4">
+                        <h4 class="font-semibold text-gray-700 mb-2">شهادة الميلاد:</h4>
+                        <img src="${application.documents.birth_certificate_image_url}" 
+                             alt="شهادة ميلاد" 
+                             class="w-full max-w-md h-48 object-cover rounded-lg cursor-pointer hover:opacity-90 transition-all mx-auto"
+                             onclick="previewImage('${application.documents.birth_certificate_image_url}', 'شهادة الميلاد')">
+                    </div>
+                `;
+            }
+            
+            detailsDiv.innerHTML = `
+                <div class="space-y-6">
+                    <!-- Personal Info -->
+                    <div class="bg-gray-50 rounded-xl p-6">
+                        <h4 class="text-lg font-bold text-gray-800 mb-4">المعلومات الشخصية</h4>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <p class="text-sm text-gray-600 mb-1">الاسم الكامل</p>
+                                <p class="font-semibold text-gray-800">${application.full_name || 'غير محدد'}</p>
+                            </div>
+                            <div>
+                                <p class="text-sm text-gray-600 mb-1">السن</p>
+                                <p class="font-semibold text-gray-800">${application.age || 'غير محدد'}</p>
+                            </div>
+                            <div>
+                                <p class="text-sm text-gray-600 mb-1">رقم الهاتف</p>
+                                <p class="font-semibold text-gray-800">${application.contact?.phone_number || 'غير محدد'}</p>
+                            </div>
+                            <div>
+                                <p class="text-sm text-gray-600 mb-1">كود المستخدم</p>
+                                <p class="font-semibold text-blue-600">${application.user_code || 'لا يوجد'}</p>
+                            </div>
+                            <div>
+                                <p class="text-sm text-gray-600 mb-1">كود المحيل</p>
+                                <p class="font-semibold text-gray-800">${application.referred_by_user_code || 'لا يوجد'}</p>
+                            </div>
+                            <div>
+                                <p class="text-sm text-gray-600 mb-1">عدد الإحالات</p>
+                                <p class="font-semibold text-gray-800">${application.num || 0}</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Address -->
+                    <div class="bg-gray-50 rounded-xl p-6">
+                        <h4 class="text-lg font-bold text-gray-800 mb-4">العنوان</h4>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <p class="text-sm text-gray-600 mb-1">المحافظة</p>
+                                <p class="font-semibold text-gray-800">${application.address?.governorate || 'غير محدد'}</p>
+                            </div>
+                            <div>
+                                <p class="text-sm text-gray-600 mb-1">المدينة</p>
+                                <p class="font-semibold text-gray-800">${application.address?.city || 'غير محدد'}</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Documents -->
+                    <div class="bg-gray-50 rounded-xl p-6">
+                        <h4 class="text-lg font-bold text-gray-800 mb-4">المستندات</h4>
+                        ${documentImages}
+                        
+                        ${application.personal_photo_url ? `
+                        <div>
+                            <h4 class="font-semibold text-gray-700 mb-2">الصورة الشخصية:</h4>
+                            <img src="${application.personal_photo_url}" 
+                                 alt="صورة شخصية" 
+                                 class="w-48 h-48 object-cover rounded-lg cursor-pointer hover:opacity-90 transition-all"
+                                 onclick="previewImage('${application.personal_photo_url}', 'الصورة الشخصية')">
+                        </div>
+                        ` : ''}
+                    </div>
+                    
+                    <!-- Status & Dates -->
+                    <div class="bg-gray-50 rounded-xl p-6">
+                        <h4 class="text-lg font-bold text-gray-800 mb-4">حالة الطلب والتواريخ</h4>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <p class="text-sm text-gray-600 mb-1">حالة الطلب</p>
+                                <span class="inline-block px-3 py-1.5 text-sm font-medium rounded-full ${application.tak === true ? 'status-approved' : 'status-pending'}">
+                                    <i class="fas ${application.tak === true ? 'fa-check-circle' : 'fa-clock'} ml-1"></i>
+                                    ${application.tak === true ? 'مقبول' : 'قيد الانتظار'}
+                                </span>
+                            </div>
+                            <div>
+                                <p class="text-sm text-gray-600 mb-1">تاريخ التقديم</p>
+                                <p class="font-semibold text-gray-800">${createdDate.toLocaleDateString('ar-EG')} - ${createdDate.toLocaleTimeString('ar-EG', { hour12: true, hour: '2-digit', minute: '2-digit' })}</p>
+                            </div>
+                            ${approvedDate ? `
+                            <div>
+                                <p class="text-sm text-gray-600 mb-1">تاريخ القبول</p>
+                                <p class="font-semibold text-gray-800">${approvedDate.toLocaleDateString('ar-EG')} - ${approvedDate.toLocaleTimeString('ar-EG', { hour12: true, hour: '2-digit', minute: '2-digit' })}</p>
+                            </div>
+                            <div>
+                                <p class="text-sm text-gray-600 mb-1">تم القبول بواسطة</p>
+                                <p class="font-semibold text-gray-800">${application.approved_by || 'المسؤول'}</p>
+                            </div>
+                            ` : ''}
+                        </div>
+                    </div>
+                    
+                    <!-- Actions -->
+                    <div class="flex flex-col md:flex-row gap-4 pt-6 border-t border-gray-200">
+                        ${application.tak !== true ? `
+                        <button onclick="approveApplication('${id}')" 
+                                class="flex-1 bg-gradient-to-r from-emerald-600 to-emerald-700 text-white py-3 rounded-xl font-semibold hover:from-emerald-700 hover:to-emerald-800 transition-all">
+                            <i class="fas fa-check-circle ml-2"></i>
+                            قبول الطلب
+                        </button>
+                        ` : ''}
+                        
+                        ${application.contact?.phone_number ? `
+                        <button onclick="openWhatsAppModal('${application.contact.phone_number}', '${application.full_name || ''}')" 
+                                class="flex-1 bg-gradient-to-r from-green-600 to-green-700 text-white py-3 rounded-xl font-semibold hover:from-green-700 hover:to-green-800 transition-all">
+                            <i class="fab fa-whatsapp ml-2"></i>
+                            الاتصال عبر واتساب
+                        </button>
+                        ` : ''}
+                        
+                        <button onclick="applicationModal.classList.add('hidden')" 
+                                class="flex-1 border border-gray-300 text-gray-700 py-3 rounded-xl font-semibold hover:bg-gray-50 transition-all">
+                            <i class="fas fa-times ml-2"></i>
+                            إغلاق
+                        </button>
+                    </div>
+                </div>
+            `;
+            
+            // Show modal
+            applicationModal.classList.remove('hidden');
+        }
+        
+        // Preview Image
+        function previewImage(url, title) {
+            document.getElementById('previewImage').src = url;
+            document.getElementById('imageTitle').textContent = title;
+            document.getElementById('downloadImage').href = url;
+            imageModal.classList.remove('hidden');
+        }
+        
+        // Open WhatsApp Modal
+        function openWhatsAppModal(phoneNumber, name) {
+            const cleanNumber = phoneNumber.replace(/\D/g, '');
+            const whatsappUrl = `https://wa.me/2${cleanNumber}?text=مرحباً ${name ? encodeURIComponent(name) : ''}، هذا اتصال من RTI – EG`;
+            
+            document.getElementById('whatsappNumber').textContent = phoneNumber;
+            document.getElementById('whatsappMessage').textContent = name ? 
+                `سيتم فتح محادثة واتساب مع ${name}:` : 
+                'سيتم فتح محادثة واتساب مع الرقم:';
+            
+            document.getElementById('openWhatsApp').href = whatsappUrl;
+            whatsappModal.classList.remove('hidden');
+        }
+        
+        // Load Problems
+        async function loadProblems() {
+            try {
+                const problemsRef = database.ref('problems');
+                const snapshot = await problemsRef.once('value');
+                
+                if (snapshot.exists()) {
+                    problemsData = snapshot.val();
+                    displayProblems(problemsData);
+                    updateStats();
+                } else {
+                    displayNoProblems();
+                }
+                
+            } catch (error) {
+                console.error('Error loading problems:', error);
+                showError('فشل في تحميل تقارير المشاكل.');
+            }
+        }
+        
+        // Display Problems
+        function displayProblems(data) {
+            const problemsList = document.getElementById('problemsList');
+            problemsList.innerHTML = '';
+            
+            let problemCount = 0;
+            
+            Object.entries(data).forEach(([key, problem]) => {
+                if (!problem || typeof problem !== 'object') return;
+                
+                problemCount++;
+                
+                // Format date
+                const createdDate = problem.created_at ? new Date(problem.created_at) : new Date();
+                const dateString = createdDate.toLocaleDateString('ar-EG');
+                const timeString = createdDate.toLocaleTimeString('ar-EG', { hour12: true, hour: '2-digit', minute: '2-digit' });
+                
+                const problemDiv = document.createElement('div');
+                problemDiv.className = 'bg-red-50 border border-red-100 rounded-xl p-5 hover-lift fade-in';
+                problemDiv.innerHTML = `
+                    <div class="flex items-start justify-between mb-3">
+                        <div>
+                            <h4 class="font-bold text-gray-800">${problem.name || 'مجهول'}</h4>
+                            <p class="text-sm text-gray-600">${problem.phone || 'لا يوجد رقم'}</p>
+                        </div>
+                        <span class="text-xs text-red-600 bg-red-100 px-2 py-1 rounded">${problem.status === 'resolved' ? 'تم الحل' : 'جديد'}</span>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <p class="text-sm text-gray-700 leading-relaxed">${problem.description || 'لا يوجد وصف'}</p>
+                    </div>
+                    
+                    <div class="flex items-center justify-between text-sm text-gray-500">
+                        <div class="flex items-center">
+                            <i class="fas fa-calendar ml-2"></i>
+                            <span>${dateString} - ${timeString}</span>
+                        </div>
+                        ${problem.phone ? `
+                        <button onclick="openWhatsAppModal('${problem.phone}', '${problem.name || ''}')" 
+                                class="text-red-600 hover:text-red-700 flex items-center">
+                            <i class="fab fa-whatsapp ml-1"></i>
+                            التواصل
+                        </button>
+                        ` : ''}
+                    </div>
+                `;
+                
+                problemsList.appendChild(problemDiv);
+            });
+            
+            // Update problem counts
+            document.getElementById('reportedProblems').textContent = problemCount;
+            document.getElementById('mobileReportedProblems').textContent = problemCount;
+            document.getElementById('statsProblems').textContent = problemCount;
+            
+            // If no problems
+            if (problemCount === 0) {
+                displayNoProblems();
+            }
+        }
+        
+        // Display No Problems
+        function displayNoProblems() {
+            const problemsList = document.getElementById('problemsList');
+            problemsList.innerHTML = `
+                <div class="text-center py-12">
+                    <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <i class="fas fa-check-circle text-gray-400 text-2xl"></i>
+                    </div>
+                    <h4 class="text-lg font-semibold text-gray-700 mb-2">لا توجد مشاكل</h4>
+                    <p class="text-gray-500">لم يتم الإبلاغ عن أي مشاكل حالياً.</p>
+                </div>
+            `;
+            
+            // Reset problem counts
+            document.getElementById('reportedProblems').textContent = '0';
+            document.getElementById('mobileReportedProblems').textContent = '0';
+            document.getElementById('statsProblems').textContent = '0';
+        }
+        
+        // Update Stats
+        function updateStats() {
+            // Stats are updated in displayApplications and displayProblems functions
+        }
+        
+        // Start Auto Refresh
+        function startAutoRefresh() {
+            if (autoRefreshInterval) {
+                clearInterval(autoRefreshInterval);
+            }
+            
+            if (isAutoRefreshEnabled) {
+                autoRefreshInterval = setInterval(() => {
+                    loadApplications();
+                    loadProblems();
+                }, 10000); // 10 seconds
+            }
+        }
+        
+        // Toggle Auto Refresh
+        function toggleAutoRefresh(e) {
+            if (e.target.id === 'autoRefreshToggle') {
+                isAutoRefreshEnabled = e.target.checked;
+            } else {
+                isAutoRefreshEnabled = !isAutoRefreshEnabled;
+                document.getElementById('autoRefreshToggle').checked = isAutoRefreshEnabled;
+            }
+            
+            const statusText = isAutoRefreshEnabled ? 'مفعل' : 'معطل';
+            document.getElementById('autoRefreshStatus').textContent = statusText;
+            document.getElementById('refreshStatus').textContent = statusText;
+            document.getElementById('systemAutoRefresh').textContent = statusText;
+            
+            if (isAutoRefreshEnabled) {
+                startAutoRefresh();
+                showSuccess('تم تفعيل التحديث التلقائي');
+            } else {
+                if (autoRefreshInterval) {
+                    clearInterval(autoRefreshInterval);
+                    autoRefreshInterval = null;
+                }
+                showInfo('تم تعطيل التحديث التلقائي');
+            }
+        }
+        
+        // Export Data
+        function exportData() {
+            // Create CSV content
+            let csvContent = "data:text/csv;charset=utf-8,";
+            csvContent += "الاسم,السن,الهاتف,المحافظة,المدينة,كود المستخدم,كود المحيل,عدد الإحالات,الحالة,تاريخ التقديم\n";
+            
+            Object.values(applicationsData).forEach(app => {
+                const row = [
+                    app.full_name || '',
+                    app.age || '',
+                    app.contact?.phone_number || '',
+                    app.address?.governorate || '',
+                    app.address?.city || '',
+                    app.user_code || '',
+                    app.referred_by_user_code || '',
+                    app.num || 0,
+                    app.tak === true ? 'مقبول' : 'قيد الانتظار',
+                    app.created_at ? new Date(app.created_at).toLocaleDateString('ar-EG') : ''
+                ].map(field => `"${field}"`).join(',');
+                
+                csvContent += row + "\n";
+            });
+            
+            // Create download link
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", `rti_applications_${new Date().toISOString().split('T')[0]}.csv`);
+            document.body.appendChild(link);
+            
+            // Trigger download
+            link.click();
+            document.body.removeChild(link);
+            
+            showSuccess('تم تصدير البيانات بنجاح');
+        }
+        
+        // Update Date and Time
+        function updateDateTime() {
+            const now = new Date();
+            
+            // Time in 12-hour format
+            const timeString = now.toLocaleTimeString('ar-EG', { 
+                hour12: true, 
+                hour: '2-digit', 
+                minute: '2-digit',
+                second: '2-digit'
+            });
+            
+            // Date in Arabic format
+            const dateString = now.toLocaleDateString('ar-EG', {
+                weekday: 'long',
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+            });
+            
+            document.getElementById('currentTime').textContent = timeString;
+            document.getElementById('currentDate').textContent = dateString;
+        }
+        
+        // Get Formatted Time
+        function getFormattedTime(date) {
+            return date.toLocaleTimeString('ar-EG', { 
+                hour12: true, 
+                hour: '2-digit', 
+                minute: '2-digit'
+            });
+        }
+        
+        // Show Success Message
+        function showSuccess(message) {
+            // Create notification
+            const notification = document.createElement('div');
+            notification.className = 'fixed top-4 left-4 z-50 bg-emerald-500 text-white px-6 py-3 rounded-xl shadow-lg flex items-center space-x-3 space-x-reverse fade-in';
+            notification.innerHTML = `
+                <i class="fas fa-check-circle text-lg"></i>
+                <span>${message}</span>
+            `;
+            
+            document.body.appendChild(notification);
+            
+            // Remove after 3 seconds
+            setTimeout(() => {
+                notification.classList.add('opacity-0', 'transition-all', 'duration-300');
+                setTimeout(() => {
+                    document.body.removeChild(notification);
+                }, 300);
+            }, 3000);
+        }
+        
+        // Show Error Message
+        function showError(message) {
+            // Create notification
+            const notification = document.createElement('div');
+            notification.className = 'fixed top-4 left-4 z-50 bg-red-500 text-white px-6 py-3 rounded-xl shadow-lg flex items-center space-x-3 space-x-reverse fade-in';
+            notification.innerHTML = `
+                <i class="fas fa-exclamation-circle text-lg"></i>
+                <span>${message}</span>
+            `;
+            
+            document.body.appendChild(notification);
+            
+            // Remove after 3 seconds
+            setTimeout(() => {
+                notification.classList.add('opacity-0', 'transition-all', 'duration-300');
+                setTimeout(() => {
+                    document.body.removeChild(notification);
+                }, 300);
+            }, 3000);
+        }
+        
+        // Show Info Message
+        function showInfo(message) {
+            // Create notification
+            const notification = document.createElement('div');
+            notification.className = 'fixed top-4 left-4 z-50 bg-blue-500 text-white px-6 py-3 rounded-xl shadow-lg flex items-center space-x-3 space-x-reverse fade-in';
+            notification.innerHTML = `
+                <i class="fas fa-info-circle text-lg"></i>
+                <span>${message}</span>
+            `;
+            
+            document.body.appendChild(notification);
+            
+            // Remove after 3 seconds
+            setTimeout(() => {
+                notification.classList.add('opacity-0', 'transition-all', 'duration-300');
+                setTimeout(() => {
+                    document.body.removeChild(notification);
+                }, 300);
+            }, 3000);
+        }
+        
+        // Make functions available globally
+        window.approveApplication = approveApplication;
+        window.viewApplicationDetails = viewApplicationDetails;
+        window.previewImage = previewImage;
+        window.openWhatsAppModal = openWhatsAppModal;
+        
+    </script>
+    
+</body>
+</html>
